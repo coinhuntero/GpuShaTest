@@ -46,7 +46,7 @@ public:
         unsigned _platformId
     );
     bool Init();
-    uint64_t CalcHash(uint32_t *state, uint64_t nonce, uint8_t* hash);
+    uint64_t CalcHash(uint32_t *state, uint32_t *data, uint64_t nonce, uint8_t* hash);
 
     static void SetNumInstances(unsigned _instances) { _numInstances = std::min<unsigned>(_instances, GetNumDevices()); }
     static void SetDevices(unsigned * _devices, unsigned _selectedDeviceCount)
@@ -65,6 +65,7 @@ private:
     cl::CommandQueue _queue;
     cl::Kernel _searchKernel;
     cl::Buffer _stateBuffer;
+	cl::Buffer _dataBuffer;
     cl::Buffer _minHashBuffer;
     cl::Buffer _searchBuffer;
     cl::Buffer _outputHashBuffer;

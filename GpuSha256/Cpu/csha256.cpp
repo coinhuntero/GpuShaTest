@@ -167,15 +167,16 @@ CSHA256::CSHA256() : _bytes(0)
     sha256::Initialize(_state);
 }
 
-void CSHA256::SetState(uint32_t* state, size_t size)
+void CSHA256::SetState(const uint32_t* state, const uint8_t* data, size_t size)
 {
     memcpy(_state, state, 32);
+	memcpy(_buf, data, size);
     _bytes = size;
 }
 
-CSHA256& CSHA256::Write(const unsigned char* data, size_t len)
+CSHA256& CSHA256::Write(const uint8_t* data, size_t len)
 {
-    const unsigned char* end = data + len;
+    const uint8_t* end = data + len;
     size_t bufsize = _bytes % 64;
     if(bufsize && bufsize + len >= 64)
     {
@@ -202,7 +203,7 @@ CSHA256& CSHA256::Write(const unsigned char* data, size_t len)
     return *this;
 }
 
-void CSHA256::Finalize(unsigned char hash[OUTPUT_SIZE])
+void CSHA256::Finalize(uint8_t hash[OUTPUT_SIZE])
 {
     static const unsigned char pad[64] = { 0x80 };
     unsigned char sizedesc[8];

@@ -422,6 +422,10 @@ bool ClSha256::Init()
         std::cout << "Creating buffer for initial hashing state." << std::endl;
         _stateBuffer = cl::Buffer(_context, CL_MEM_READ_ONLY, 32);
 
+		// create buffer for initial hashing state
+		std::cout << "Creating buffer for initial data." << std::endl;
+		_dataBuffer = cl::Buffer(_context, CL_MEM_READ_ONLY, 56);
+
         // create buffer for mininal target hash
         std::cout << "Creating buffer for target hash." << std::endl;
         _minHashBuffer = cl::Buffer(_context, CL_MEM_READ_ONLY, 32);
@@ -444,7 +448,7 @@ bool ClSha256::Init()
     return true;
 }
 
-uint64_t ClSha256::CalcHash(uint32_t* state, uint64_t nonce, uint8_t* hash)
+uint64_t ClSha256::CalcHash(uint32_t* state, uint32_t *data, uint64_t nonce, uint8_t* hash)
 {
     // Memory for zero-ing buffers. Cannot be static because crashes on macOS.
     uint32_t const c_zero = 0;
@@ -456,17 +460,19 @@ uint64_t ClSha256::CalcHash(uint32_t* state, uint64_t nonce, uint8_t* hash)
     try
     {
         _queue.enqueueWriteBuffer(_stateBuffer, CL_FALSE, 0, 32, state);
+		_queue.enqueueWriteBuffer(_dataBuffer, CL_FALSE, 0, 56, data);
         _queue.enqueueWriteBuffer(_minHashBuffer, CL_FALSE, 0, 32, minhash);
         _queue.enqueueWriteBuffer(_searchBuffer, CL_FALSE, 0, sizeof(c_zero), &c_zero);
 
         _searchKernel.setArg(0, _stateBuffer);
-        _searchKernel.setArg(2, 1);
-        _searchKernel.setArg(3, _minHashBuffer);
-        _searchKernel.setArg(4, _searchBuffer); // Supply output buffer to kernel.
-        _searchKernel.setArg(5, _outputHashBuffer); // Supply output buffer to kernel.
+		_searchKernel.setArg(1, _dataBuffer);
+		_searchKernel.setArg(2, nonce);
+        _searchKernel.setArg(3, 1);
+        _searchKernel.setArg(4, _minHashBuffer);
+        _searchKernel.setArg(5, _searchBuffer); 
+        _searchKernel.setArg(6, _outputHashBuffer);
 
-        // Run the kernel.
-        _searchKernel.setArg(1, nonce);
+        // Run the kernel.        
         _queue.enqueueNDRangeKernel(_searchKernel, cl::NullRange, 1, 1);
 
         // Read results.

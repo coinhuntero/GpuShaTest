@@ -107,25 +107,29 @@ namespace opt_ssl
 		}
 	}
 
-	void set_state(_SHA256_CTX *ctx, uint32_t* state, size_t size)
+	void set_state(_SHA256_CTX *ctx, const uint32_t* state, const uint8_t* data)
 	{
 		memcpy(ctx->state, state, 32);
-		ctx->datalen = 0;
-		ctx->bitlen = size << 3;
+		memcpy(ctx->data, data, 56);
+		ctx->datalen = 56;
+		ctx->bitlen = 448 << 3;
 		ctx->bitlenH = 0;
 		ctx->md_len = SHA256_BLOCK_SIZE;
 	}
 
-	void shasha(uint32_t* state, uint64_t nonce, uint8_t *hash)
+	void shasha(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t *hash)
 	{
 		_SHA256_CTX ctx;
 
 		memcpy(ctx.h, state, 32);
+		memcpy(ctx.data, data, 56);
 
-		((uint64_t*)ctx.data)[0] = nonce;
-		((uint64_t*)ctx.data)[1] = 0x80;
-		memset(ctx.data + 4, 0, 40);
-		((uint64_t*)ctx.data)[7] = 0x400E000000000000;
+		((uint64_t*)ctx.data)[7] = nonce;
+		SHA256_Transform(&ctx, (uint8_t*)ctx.data);
+
+		((uint64_t*)ctx.data)[0] = 0x80;
+		memset(ctx.data + 2, 0, 48);
+		((uint64_t*)ctx.data)[7] = 0x0010000000000000;
 		SHA256_Transform(&ctx, (uint8_t*)ctx.data);
 
 		WriteBE64x32(((uint64_t*)ctx.data), ((uint64_t*)ctx.h)[0]);

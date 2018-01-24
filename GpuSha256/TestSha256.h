@@ -11,24 +11,24 @@ private:
     ClSha256 _gpuSha;
 #endif
 
-    static void DoCpuHash_St(uint8_t* state, uint64_t nonce, uint8_t* hash);
-    static void DoCpuHash_St_Ssl(uint8_t* state, uint64_t nonce, uint8_t* hash);
-    static void DoCpuHash_Opt(uint8_t* state, uint64_t nonce, uint8_t* hash);
-    static void DoCpuHash_Opt_Ssl(uint8_t* state, uint64_t nonce, uint8_t* hash);
-    static void DoCpuHash_Btc(uint8_t* state, uint64_t nonce, uint8_t* hash);
-    static void DoCpuHash_Modified(uint8_t* state, uint64_t nonce, uint8_t* hash);
+    static void DoCpuHash_St(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
+    static void DoCpuHash_St_Ssl(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
+    static void DoCpuHash_Opt(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
+    static void DoCpuHash_Opt_Ssl(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
+    static void DoCpuHash_Btc(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
+    static void DoCpuHash_Modified(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
 #if ENABLE_GPU
-    inline void DoGpuHash(uint8_t* data, uint64_t nonce, uint8_t* hash);
+    inline void DoGpuHash(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
 #endif
-    static void SimulateGpu(uint8_t* data, uint64_t nonce, uint8_t* hash);
-    void CompareHashes(const char* state, uint64_t nonce);
+    static void SimulateGpu(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
+    void CompareHashes(const uint32_t* state, const uint8_t* data, uint64_t nonce);
     size_t TestPerformanceCpu_St(size_t count);
     size_t TestPerformanceCpu_St_Ssl(size_t count);
     size_t TestPerformanceCpu_Opt(size_t count);
     size_t TestPerformanceCpu_Opt_Ssl(size_t count);
     size_t TestPerformanceCpu_Btc(size_t count);
     size_t TestPerformanceCpu_Modified(size_t count);
-    size_t TestPerformanceCpuBase(size_t count, const char* message, void doCpuHash(uint8_t*, uint64_t, uint8_t*));
+    size_t TestPerformanceCpuBase(size_t count, const char* message, void doCpuHash(const uint32_t*, const uint8_t*, uint64_t, uint8_t*));
 public:
     CTestSha256();
     ~CTestSha256();

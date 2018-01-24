@@ -19,8 +19,8 @@ namespace opt
     void sha256_update(SHA256_CTX *ctx, const uint8_t *data, size_t len);
     void sha256_final(SHA256_CTX *ctx, uint8_t *hash);
 
-    void set_state(SHA256_CTX *ctx, uint32_t* state, size_t size);
+	void set_state(SHA256_CTX *ctx, uint32_t* state, uint8_t* data);
 
-	void shasha(uint32_t* state, uint64_t nonce, uint8_t *hash);
+	void shasha(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t *hash);
 }
 #endif  

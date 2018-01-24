@@ -165,10 +165,11 @@ namespace st
         }
     }
 
-    void set_state(SHA256_CTX *ctx, WORD* state, size_t size)
+    void set_state(SHA256_CTX *ctx, WORD* state, BYTE* data)
     {
         memcpy(ctx->state, state, 32);
-        ctx->datalen = 0;
-        ctx->bitlen = size << 3;
+		memcpy(ctx->data, data, 56);
+        ctx->datalen = 56;
+        ctx->bitlen = 448 << 3;
     }
 }

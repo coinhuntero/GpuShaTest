@@ -209,40 +209,44 @@ namespace opt
         WriteBE32((uint32_t*)(hash + 28), ctx->state[7]);
     }
 
-    void set_state(SHA256_CTX *ctx, uint32_t* state, size_t size)
-    {
-        memcpy(ctx->state, state, 32);
-        ctx->datalen = 0;
-        ctx->bitlen = size << 3;
-    }
+	void set_state(SHA256_CTX *ctx, uint32_t* state, uint8_t* data)
+	{
+		memcpy(ctx->state, state, 32);
+		memcpy(ctx->data, data, 56);
+		ctx->datalen = 56;
+		ctx->bitlen = 448 << 3;
+	}
 
-	void shasha(uint32_t* state, uint64_t nonce, uint8_t *hash)
+	void shasha(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t *hash)
 	{
 		uint64_t stateBuffer[4];
-		uint64_t data[8];
+		uint64_t dataBuffer[8];
 
 		memcpy(stateBuffer, state, 32);
+		memcpy(dataBuffer, data, 56);
 
-		data[0] = nonce;
-		data[1] = 0x80;
-		memset(data + 2, 0, 40);
-		data[7] = 0x400E000000000000;
-		sha256_transform((uint32_t*)stateBuffer, (uint8_t*)data);
+		dataBuffer[7] = nonce;
+		sha256_transform((uint32_t*)stateBuffer, (uint8_t*)dataBuffer);
 
-		WriteBE64x32(data, stateBuffer[0]);
-		WriteBE64x32(data + 1, stateBuffer[1]);
-		WriteBE64x32(data + 2, stateBuffer[2]);
-		WriteBE64x32(data + 3, stateBuffer[3]);
+		dataBuffer[0] = 0x80;
+		memset(dataBuffer + 1, 0, 48);
+		dataBuffer[7] = 0x0010000000000000;
+		sha256_transform((uint32_t*)stateBuffer, (uint8_t*)dataBuffer);
+
+		WriteBE64x32(dataBuffer, stateBuffer[0]);
+		WriteBE64x32(dataBuffer + 1, stateBuffer[1]);
+		WriteBE64x32(dataBuffer + 2, stateBuffer[2]);
+		WriteBE64x32(dataBuffer + 3, stateBuffer[3]);
 
 		stateBuffer[0] = 0xbb67ae856a09e667;
 		stateBuffer[1] = 0xa54ff53a3c6ef372;
 		stateBuffer[2] = 0x9b05688c510e527f;
 		stateBuffer[3] = 0x5be0cd191f83d9ab;
 
-		data[4] = 0x80;
-		memset(data + 5, 0, 16);
-		data[7] = 0x0001000000000000;
-		sha256_transform((uint32_t*)stateBuffer, (uint8_t*)data);
+		dataBuffer[4] = 0x80;
+		memset(dataBuffer + 5, 0, 16);
+		dataBuffer[7] = 0x0001000000000000;
+		sha256_transform((uint32_t*)stateBuffer, (uint8_t*)dataBuffer);
 
 		WriteBE64x32((uint64_t*)hash, stateBuffer[0]);
 		WriteBE64x32((uint64_t*)(hash + 8), stateBuffer[1]);

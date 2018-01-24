@@ -3,3 +3,5 @@ GpuSha256/x64/
 packages/
 x64/
 GpuSha256.VC.db
+/.vs/
+/GpuSha256.VC.VC.opendb

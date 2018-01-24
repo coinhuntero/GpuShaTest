@@ -155,6 +155,7 @@
     <ClCompile Include="OpenCL\ClSha256.cpp" />
     <ClCompile Include="TestSha256.cpp" />
     <ClCompile Include="Utils\PathUtils.cpp" />
+    <ClCompile Include="Utils\Random.cpp" />
     <ClCompile Include="Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -174,6 +175,7 @@
     <ClInclude Include="OpenCL\ClSha256.h" />
     <ClInclude Include="TestSha256.h" />
     <ClInclude Include="Utils\PathUtils.h" />
+    <ClInclude Include="Utils\Random.h" />
     <ClInclude Include="Utils\Utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

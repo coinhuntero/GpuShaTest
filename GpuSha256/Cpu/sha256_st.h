@@ -34,6 +34,6 @@ namespace st
     void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
     void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
 
-    void set_state(SHA256_CTX *ctx, WORD* state, size_t size);
+    void set_state(SHA256_CTX *ctx, WORD* state, BYTE* data);
 }
 #endif   // SHA256_ST_H

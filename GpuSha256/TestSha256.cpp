@@ -6,6 +6,7 @@
 #include "Cpu\sha256_mod.h"
 #include "Cpu\csha256.h"
 #include "Utils\Utils.h"
+#include "Utils\Random.h"
 #include <iostream>
 
 CTestSha256::CTestSha256()
@@ -43,14 +44,33 @@ bool CTestSha256::Init()
 
 void CTestSha256::TestHashing()
 {
-    CompareHashes("589015beeefc8b0e438d47640bab2b36", 18446744073709);
-    CompareHashes("8ea5573609bb41e6ce35c51405bffa0a", 654697);
+	uint8_t data[56];
+	uint32_t state[8];
+	CRandom::FillRandomArray((uint8_t*)state, 32);
+	CRandom::FillRandomArray(data, 56);
+
+    CompareHashes((uint32_t*)"589015beeefc8b0e438d47640bab2b36", (uint8_t*)"3513d023cf424b5647a7b3c772a5d9ce4c8cca09849793def6435d92", 18446744073709);
+
+    CompareHashes(state, data, 654697);
+
+	uint32_t stateConst[8] = 
+	{
+		4153602721,
+		2442630072,
+		1449523699,
+		1580568866,
+		3294848380,
+		2151274137,
+		1804121806,
+		1732303255
+	};
+	CompareHashes(stateConst, data, 0);
 }
 
-void CTestSha256::DoCpuHash_St(uint8_t* state, uint64_t nonce, uint8_t* hash)
+void CTestSha256::DoCpuHash_St(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
     st::SHA256_CTX ctx;
-    st::set_state(&ctx, (uint32_t*)state, 448);
+    st::set_state(&ctx, (WORD*)state, (BYTE*)data);
     st::sha256_update(&ctx, (uint8_t*)&nonce, sizeof(uint64_t));
     st::sha256_final(&ctx, (uint8_t*)hash);
     st::sha256_init(&ctx);
@@ -58,10 +78,10 @@ void CTestSha256::DoCpuHash_St(uint8_t* state, uint64_t nonce, uint8_t* hash)
     st::sha256_final(&ctx, hash);
 }
 
-void CTestSha256::DoCpuHash_St_Ssl(uint8_t* state, uint64_t nonce, uint8_t* hash)
+void CTestSha256::DoCpuHash_St_Ssl(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
     opt_ssl::_SHA256_CTX ctx;
-    opt_ssl::set_state(&ctx, (uint32_t*)state, 448);
+    opt_ssl::set_state(&ctx, state, data);
     opt_ssl::sha256_update(&ctx, (uint8_t*)&nonce, sizeof(uint64_t));
     opt_ssl::sha256_final(&ctx, (uint8_t*)hash);
     opt_ssl::sha256_init(&ctx);
@@ -69,20 +89,20 @@ void CTestSha256::DoCpuHash_St_Ssl(uint8_t* state, uint64_t nonce, uint8_t* hash
     opt_ssl::sha256_final(&ctx, hash);
 }
 
-void CTestSha256::DoCpuHash_Opt(uint8_t* state, uint64_t nonce, uint8_t* hash)
+void CTestSha256::DoCpuHash_Opt(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
-    opt::shasha((uint32_t*)state, nonce, hash);
+    opt::shasha((uint32_t*)state, data, nonce, hash);
 }
 
-void CTestSha256::DoCpuHash_Opt_Ssl(uint8_t* state, uint64_t nonce, uint8_t* hash)
+void CTestSha256::DoCpuHash_Opt_Ssl(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
-    opt_ssl::shasha((uint32_t*)state, nonce, hash);
+    opt_ssl::shasha((uint32_t*)state, data, nonce, hash);
 }
 
-void CTestSha256::DoCpuHash_Btc(uint8_t* data, uint64_t nonce, uint8_t* hash)
+void CTestSha256::DoCpuHash_Btc(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
     CSHA256 sha;
-    sha.SetState((uint32_t*)data, 448);
+    sha.SetState(state, data, 56);
     sha.Write((uint8_t*)&nonce, sizeof(uint64_t));
     sha.Finalize(hash);
     sha.Reset();
@@ -90,41 +110,43 @@ void CTestSha256::DoCpuHash_Btc(uint8_t* data, uint64_t nonce, uint8_t* hash)
     sha.Finalize(hash);
 }
 
-void CTestSha256::DoCpuHash_Modified(uint8_t* state, uint64_t nonce, uint8_t* hash)
+void CTestSha256::DoCpuHash_Modified(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
-    mod::shasha((uint32_t*)state, nonce, hash);
+    mod::shasha((uint32_t*)state, (uint32_t*)data, nonce, hash);
 }
 
 #if ENABLE_GPU
-inline void CTestSha256::DoGpuHash(uint8_t* data, uint64_t nonce, uint8_t* hash)
+inline void CTestSha256::DoGpuHash(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
-    _gpuSha.CalcHash((uint32_t*)data, nonce, hash);
+    _gpuSha.CalcHash((uint32_t*)state, (uint32_t*)data, nonce, hash);
 }
 #endif
 
-void CTestSha256::CompareHashes(const char* state, uint64_t nonce)
+void CTestSha256::CompareHashes(const uint32_t* state, const uint8_t* data, uint64_t nonce)
 {
     uint8_t cpuHash[SHA256_SIZE];
     uint8_t cpuHashSsl[SHA256_SIZE];
     uint8_t cpuHashOpt[SHA256_SIZE];
     uint8_t cpuHashOptSsl[SHA256_SIZE];
-    uint8_t cpuHashBtc[SHA256_SIZE];
+    //uint8_t cpuHashBtc[SHA256_SIZE];
     uint8_t cpuHashModified[SHA256_SIZE];
 #if ENABLE_GPU
     uint8_t gpuHash[SHA256_SIZE];
 #endif
-    DoCpuHash_St((uint8_t*)state, nonce, cpuHash);
-    DoCpuHash_St_Ssl((uint8_t*)state, nonce, cpuHashSsl);
-    DoCpuHash_Opt((uint8_t*)state, nonce, cpuHashOpt);
-    DoCpuHash_Opt_Ssl((uint8_t*)state, nonce, cpuHashOptSsl);
-    DoCpuHash_Btc((uint8_t*)state, nonce, cpuHashBtc);
-    DoCpuHash_Modified((uint8_t*)state, nonce, cpuHashModified);
+    DoCpuHash_St(state, data, nonce, cpuHash);
+    DoCpuHash_St_Ssl(state, data, nonce, cpuHashSsl);
+    DoCpuHash_Opt(state, data, nonce, cpuHashOpt);
+    DoCpuHash_Opt_Ssl(state, data, nonce, cpuHashOptSsl);
+    //DoCpuHash_Btc(state, data, nonce, cpuHashBtc);
+    DoCpuHash_Modified(state, data, nonce, cpuHashModified);
 
 #if ENABLE_GPU
-    DoGpuHash((uint8_t*)state, nonce, gpuHash);
+    DoGpuHash(state, data, nonce, gpuHash);
 #endif
 
-    std::cout << "State: " << state << " nonce: " << nonce << std::endl;
+	std::cout << "State: " << std::endl;
+	DumpHex((uint8_t*)state, 32);
+	std::cout << "Nonce: " << nonce << std::endl;
     std::cout << "Cpu hash (default):" << std::endl;
     DumpHex(cpuHash, SHA256_SIZE);
     std::cout << "Cpu hash (ssl):" << std::endl;
@@ -133,8 +155,8 @@ void CTestSha256::CompareHashes(const char* state, uint64_t nonce)
     DumpHex(cpuHashOpt, SHA256_SIZE);
     std::cout << "Cpu hash (optimized+ssl):" << std::endl;
     DumpHex(cpuHashOptSsl, SHA256_SIZE);
-    std::cout << "Cpu hash (btc):" << std::endl;
-    DumpHex(cpuHashBtc, SHA256_SIZE);
+    //std::cout << "Cpu hash (btc):" << std::endl;
+    //DumpHex(cpuHashBtc, SHA256_SIZE);
     std::cout << "Cpu hash (modified):" << std::endl;
     DumpHex(cpuHashModified, SHA256_SIZE);
 
@@ -148,8 +170,8 @@ void CTestSha256::CompareHashes(const char* state, uint64_t nonce)
     std::cout << "Cpu default hash and cpu ssl hash are " << (equal5 ? "equal" : "not equal") << std::endl;
     bool equal4 = memcmp(cpuHash, cpuHashOptSsl, SHA256_SIZE) == 0;
     std::cout << "Cpu default hash and cpu optimized+ssl hash are " << (equal4 ? "equal" : "not equal") << std::endl;
-    bool equal2 = memcmp(cpuHash, cpuHashBtc, SHA256_SIZE) == 0;
-    std::cout << "Cpu default hash and cpu btc hash are " << (equal2 ? "equal" : "not equal") << std::endl;
+    //bool equal2 = memcmp(cpuHash, cpuHashBtc, SHA256_SIZE) == 0;
+    //std::cout << "Cpu default hash and cpu btc hash are " << (equal2 ? "equal" : "not equal") << std::endl;
     bool equal3 = memcmp(cpuHash, cpuHashModified, SHA256_SIZE) == 0;
     std::cout << "Cpu default hash and cpu modified hash are " << (equal3 ? "equal" : "not equal") << std::endl;
 #if ENABLE_GPU
@@ -201,17 +223,18 @@ size_t CTestSha256::TestPerformanceCpu_Modified(size_t count)
     return TestPerformanceCpuBase(count, "Hashing with CPU (one core, modified algo)...", DoCpuHash_Modified);
 }
 
-size_t CTestSha256::TestPerformanceCpuBase(size_t count, const char* message, void doCpuHash(uint8_t*, uint64_t, uint8_t*))
+size_t CTestSha256::TestPerformanceCpuBase(size_t count, const char* message, void doCpuHash(const uint32_t*, const uint8_t*, uint64_t, uint8_t*))
 {
-    const size_t length = 32;
-    uint8_t *data = (uint8_t*)"989005beeefc8b0e438d47640bab6b36";
-    uint8_t hash[length];
+    uint32_t *state = (uint32_t*)"989005beeefc8b0e438d47640bab6b36";
+	uint8_t data[56];
+    uint8_t hash[32];
+	CRandom::FillRandomArray(data, 56);
 
     std::cout << message << std::endl;
     size_t startTime = GetTimeMs();
     for (size_t i = 0; i < count; ++i)
     {
-        doCpuHash(data, i, hash);
+        doCpuHash(state, data, i, hash);
     }
     size_t time = GetTimeMs() - startTime;
     double sec = time / 1000.0;
@@ -222,15 +245,17 @@ size_t CTestSha256::TestPerformanceCpuBase(size_t count, const char* message, vo
 
 void CTestSha256::TestGPU()
 {
-    const char* state = "589015beeefc8b0e438d47640bab2b36";
+    const uint32_t* state = (uint32_t*)"589015beeefc8b0e438d47640bab2b36";
+	uint8_t data[56];
     uint64_t nonce = 18446744073709;
     uint8_t cpuHash[SHA256_SIZE];
     uint8_t cpuHashSim[SHA256_SIZE];
     uint8_t gpuHash[SHA256_SIZE];
+	CRandom::FillRandomArray(data, 56);
 
-    DoCpuHash_St((uint8_t*)state, nonce, cpuHash);
-    SimulateGpu((uint8_t*)state, nonce, cpuHashSim);
-    DoGpuHash((uint8_t*)state, nonce, gpuHash);
+    DoCpuHash_St((uint32_t*)state, data, nonce, cpuHash);
+    SimulateGpu((uint32_t*)state, data, nonce, cpuHashSim);
+    DoGpuHash((uint32_t*)state, data, nonce, gpuHash);
 
     std::cout << "State: " << state << " nonce: " << nonce << std::endl;
     std::cout << "Cpu hash (default):" << std::endl;
@@ -248,11 +273,11 @@ void CTestSha256::TestGPU()
     std::cout << std::endl;
 }
 
-void CTestSha256::SimulateGpu(uint8_t* data, uint64_t nonce, uint8_t* hash)
+void CTestSha256::SimulateGpu(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
     uint8_t minhash[32];
     memset(minhash, 255, 32);
     uint64_t resultNonce;
 
-    mod::search_nonce((uint32_t*)data, nonce, 1, (uint32_t*)minhash, &resultNonce, (uint32_t*)hash);
+    mod::search_nonce(state, (uint32_t*)data, nonce, 1, (uint32_t*)minhash, &resultNonce, (uint32_t*)hash);
 }
