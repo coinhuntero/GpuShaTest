@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="OpenCL">
+      <UniqueIdentifier>{3ea119b2-0a25-4d3a-bcd2-85b50fb217ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cpu">
+      <UniqueIdentifier>{63863b4c-1c8d-4bcf-9a51-7087e0ef6e16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{07b4948e-f172-4a29-82f9-d347e3d96766}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OpenCL\CL">
+      <UniqueIdentifier>{1b3d5ec5-b4d0-4bd0-99f3-689bd29904d8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TestSha256.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\PathUtils.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Utils.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Cpu\sha256_st.cpp">
+      <Filter>Cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="Cpu\csha256.cpp">
+      <Filter>Cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="Cpu\sha256_opt.cpp">
+      <Filter>Cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenCL\ClSha256.cpp">
+      <Filter>OpenCL</Filter>
+    </ClCompile>
+    <ClCompile Include="Cpu\sha256_mod.cpp">
+      <Filter>Cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="Cpu\sha256_opt_ssl.cpp">
+      <Filter>Cpu</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="OpenCL\sha256.cl">
+      <Filter>OpenCL</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TestSha256.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\PathUtils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Utils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Cpu\sha256_st.h">
+      <Filter>Cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="Cpu\csha256.h">
+      <Filter>Cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="Cpu\sha256_opt.h">
+      <Filter>Cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenCL\CL\cl2.hpp">
+      <Filter>OpenCL\CL</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenCL\ClSha256.h">
+      <Filter>OpenCL</Filter>
+    </ClInclude>
+    <ClInclude Include="Cpu\sha256_mod.h">
+      <Filter>Cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="Cpu\sha256_opt_ssl.h">
+      <Filter>Cpu</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
