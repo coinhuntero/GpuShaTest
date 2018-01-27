@@ -30,9 +30,7 @@ public:
     /// Default value of the local work size. Also known as workgroup size.
     static const unsigned _defaultLocalWorkSize = 128;
     /// Default value of the global work size as a multiplier of the local work size
-    //static const unsigned _defaultGlobalWorkSizeMultiplier = 8192;
-    //TODO: 
-    static const unsigned _defaultGlobalWorkSizeMultiplier = 1024;
+    static const unsigned _defaultGlobalWorkSizeMultiplier = 8192;
 
     ClSha256();
     virtual ~ClSha256();
@@ -45,8 +43,10 @@ public:
         unsigned _globalWorkSizeMultiplier,
         unsigned _platformId
     );
-    bool Init();
-    uint64_t CalcHash(uint32_t *state, uint32_t *data, uint64_t nonce, uint8_t* hash);
+    bool InitShaTest();
+    bool InitMiningTest();
+    uint64_t CalcHash(const uint32_t *state, const uint32_t *data, uint64_t nonce, uint8_t* hash);
+    uint64_t DoMining(const uint32_t* state, const uint32_t *data, const uint32_t *minHash, uint64_t nonce, uint32_t* outputMinHash);
 
     static void SetNumInstances(unsigned _instances) { _numInstances = std::min<unsigned>(_instances, GetNumDevices()); }
     static void SetDevices(unsigned * _devices, unsigned _selectedDeviceCount)
@@ -59,7 +59,7 @@ public:
 protected:
 
 private:
-    bool LoadKernel();
+    bool LoadKernel(std::string kernelName);
 
     cl::Context _context;
     cl::CommandQueue _queue;
@@ -75,7 +75,6 @@ private:
 
     static unsigned _platformId;
     static unsigned _numInstances;
-    static std::string _clKernelName;
     static int _devices[16];
 
     /// The local work size for the search

@@ -50,6 +50,9 @@
     <None Include="OpenCL\sha256.cl">
       <Filter>OpenCL</Filter>
     </None>
+    <None Include="OpenCL\CLMiner_kernel.cl">
+      <Filter>OpenCL</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\PathUtils.h">

@@ -143,7 +143,8 @@
       <GenerateDebugInformation>No</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy OpenCL\sha256.cl "$(OutDir)sha256.cl" /Y</Command>
+      <Command>copy OpenCL\sha256.cl "$(OutDir)sha256.cl" /Y
+copy OpenCL\CLMiner_kernel.cl "$(OutDir)CLMiner_kernel.cl" /Y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -159,6 +160,7 @@
     <ClCompile Include="Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="OpenCL\CLMiner_kernel.cl" />
     <None Include="OpenCL\sha256.cl" />
     <None Include="packages.config" />
   </ItemGroup>

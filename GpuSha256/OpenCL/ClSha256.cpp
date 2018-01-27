@@ -9,10 +9,24 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include "Cpu\sha256_mod.h"
 
-unsigned ClSha256::_sWorkgroupSize = 1;//ClSha256::_defaultLocalWorkSize;
-unsigned ClSha256::_sInitialGlobalWorkSize = 1;// ClSha256::_defaultGlobalWorkSizeMultiplier * ClSha256::_defaultLocalWorkSize;
-std::string ClSha256::_clKernelName = "sha256.cl";
+unsigned ClSha256::_sWorkgroupSize = ClSha256::_defaultLocalWorkSize;
+unsigned ClSha256::_sInitialGlobalWorkSize = ClSha256::_defaultGlobalWorkSizeMultiplier * ClSha256::_defaultLocalWorkSize;
+#define OUTPUT_SIZE 256
+#define OUTPUT_MASK OUTPUT_SIZE - 1
+
+inline int cmphash(uint64_t* l, uint64_t* r)
+{
+    for(int i = 3; i >= 0; --i)
+    {
+        if(l[i] != r[i])
+        {
+            return (l[i] < r[i] ? -1 : 1);
+        }
+    }
+    return 0;
+}
 
 /**
 * Returns the name of a numerical cl_int error
@@ -247,9 +261,6 @@ bool ClSha256::ConfigureGPU(
     unsigned platformId
 )
 {
-    //s_dagLoadMode = _dagLoadMode;
-    //s_dagCreateDevice = _dagCreateDevice;
-
     _platformId = platformId;
 
     localWorkSize = ((localWorkSize + 7) / 8) * 8;
@@ -277,7 +288,7 @@ bool ClSha256::ConfigureGPU(
         //{
         std::cout <<
             "Found suitable OpenCL device [" << device.getInfo<CL_DEVICE_NAME>()
-            << "] with " << result << " bytes of GPU memory";
+            << "] with " << result << " bytes of GPU memory" << std::endl;
         return true;
         //}
     }
@@ -286,12 +297,12 @@ bool ClSha256::ConfigureGPU(
     return false;
 }
 
-bool ClSha256::Init()
+bool ClSha256::InitShaTest()
 {
     // get all platforms
     try
     {
-        if(!LoadKernel())
+        if(!LoadKernel("sha256.cl"))
         {
             return false;
         }
@@ -381,26 +392,8 @@ bool ClSha256::Init()
         // make sure that global work size is evenly divisible by the local workgroup size
         _workgroupSize = _sWorkgroupSize;
         _globalWorkSize = _sInitialGlobalWorkSize;
-        /*if(_globalWorkSize % _workgroupSize != 0)
-        {
-            _globalWorkSize = ((_globalWorkSize / _workgroupSize) + 1) * _workgroupSize;
-        }*/
-
-        //uint64_t dagSize = ethash_get_datasize(light->light->block_number);
-        //uint32_t dagSize128 = (unsigned)(dagSize / ETHASH_MIX_BYTES);
-        //uint32_t lightSize64 = (unsigned)(light->data().size() / sizeof(node));
-
-        // patch source code
-        // note: The kernels here are simply compiled version of the respective .cl kernels
-        // into a byte array by bin2h.cmake. There is no need to load the file by hand in runtime
-        // See libethash-cl/CMakeLists.txt: add_custom_command()
-        // TODO: Just use C++ raw string literal.
 
         AddDefinition(_kernelCode, "GROUP_SIZE", _workgroupSize);
-        //AddDefinition(_kernelCode, "VENDOR_ID", device.getInfo<CL_DEVICE_VENDOR_ID>());
-        //AddDefinition(_kernelCode, "CUDA_ARCH", (device.getInfo<CL_Dev->sm_major * 100) + device_param->sm_minor device.getInfo<CL_DEVICE_VENDOR_ID>());
-        //AddDefinition(_kernelCode, "AMD_ROCM", device.getInfo<CL_DEVICE_VENDOR_ID>());
-        //AddDefinition(_kernelCode, "VECT_SIZE", device.getInfo<CL_DEVICE_VENDOR_ID>());
 
         // create miner OpenCL program
         cl::Program::Sources sources{ { _kernelCode.data(), _kernelCode.size() } };
@@ -432,12 +425,10 @@ bool ClSha256::Init()
 
         // create mining buffers
         std::cout << "Creating output buffer" << std::endl;
-        //TODO: buffer size?  What if local work group size?
         _searchBuffer = cl::Buffer(_context, CL_MEM_WRITE_ONLY, 8);
 
         // create mining buffers
         std::cout << "Creating output hash buffer" << std::endl;
-        //TODO: buffer size?  What if local work group size?
         _outputHashBuffer = cl::Buffer(_context, CL_MEM_WRITE_ONLY, 32);
     }
     catch(cl::Error const& err)
@@ -448,21 +439,162 @@ bool ClSha256::Init()
     return true;
 }
 
-uint64_t ClSha256::CalcHash(uint32_t* state, uint32_t *data, uint64_t nonce, uint8_t* hash)
+bool ClSha256::InitMiningTest()
 {
-    // Memory for zero-ing buffers. Cannot be static because crashes on macOS.
-    uint32_t const c_zero = 0;
+    // get all platforms
+    try
+    {
+        if(!LoadKernel("CLMiner_kernel.cl"))
+        {
+            return false;
+        }
+
+        std::vector<cl::Platform> platforms = GetPlatforms();
+        if(platforms.empty())
+        {
+            return false;
+        }
+
+        // use selected platform
+        unsigned platformIdx = std::min<unsigned>(_platformId, platforms.size() - 1);
+
+        std::string platformName = platforms[platformIdx].getInfo<CL_PLATFORM_NAME>();
+        std::cout << "Platform: " << platformName;
+
+        int platformId = OPENCL_PLATFORM_UNKNOWN;
+        {
+            // this mutex prevents race conditions when calling the adl wrapper since it is apparently not thread safe
+            static std::mutex mtx;
+            std::lock_guard<std::mutex> lock(mtx);
+
+            if(platformName == "NVIDIA CUDA")
+            {
+                platformId = OPENCL_PLATFORM_NVIDIA;
+                //nvmlh = wrap_nvml_create();
+            }
+            else if(platformName == "AMD Accelerated Parallel Processing")
+            {
+                platformId = OPENCL_PLATFORM_AMD;
+            }
+            else if(platformName == "Clover")
+            {
+                platformId = OPENCL_PLATFORM_CLOVER;
+            }
+        }
+
+        // get GPU device of the default platform
+        std::vector<cl::Device> devices = GetDevices(platforms, platformIdx);
+        if(devices.empty())
+        {
+            std::cout << "No OpenCL devices found.";
+            return false;
+        }
+
+        // use selected device
+        unsigned deviceId = _devices[0] > -1 ? _devices[0] : 0;
+        cl::Device& device = devices[std::min<unsigned>(deviceId, devices.size() - 1)];
+        std::string device_version = device.getInfo<CL_DEVICE_VERSION>();
+        std::cout << "Device:   " << device.getInfo<CL_DEVICE_NAME>() << " / " << device_version;
+
+        std::string clVer = device_version.substr(7, 3);
+        if(clVer == "1.0" || clVer == "1.1")
+        {
+            if(platformId == OPENCL_PLATFORM_CLOVER)
+            {
+                std::cout << "OpenCL " << clVer << " not supported, but platform Clover might work nevertheless. USE AT OWN RISK!";
+            }
+            else
+            {
+                std::cout << "OpenCL " << clVer << " not supported - minimum required version is 1.2";
+                return false;
+            }
+        }
+
+        char options[256];
+        int computeCapability = 0;
+        if(platformId == OPENCL_PLATFORM_NVIDIA)
+        {
+            cl_uint computeCapabilityMajor;
+            cl_uint computeCapabilityMinor;
+            clGetDeviceInfo(device(), CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(cl_uint), &computeCapabilityMajor, NULL);
+            clGetDeviceInfo(device(), CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(cl_uint), &computeCapabilityMinor, NULL);
+
+            computeCapability = computeCapabilityMajor * 10 + computeCapabilityMinor;
+            int maxregs = computeCapability >= 35 ? 72 : 63;
+            sprintf(options, "-cl-nv-maxrregcount=%d", maxregs);
+        }
+        else
+        {
+            sprintf(options, "%s", "");
+        }
+        // create context
+        _context = cl::Context(std::vector<cl::Device>(&device, &device + 1));
+        _queue = cl::CommandQueue(_context, device);
+
+        // make sure that global work size is evenly divisible by the local workgroup size
+        _workgroupSize = _sWorkgroupSize;
+        _globalWorkSize = _sInitialGlobalWorkSize;
+
+        AddDefinition(_kernelCode, "GROUP_SIZE", _workgroupSize);
+        AddDefinition(_kernelCode, "PLATFORM", platformId);
+        AddDefinition(_kernelCode, "OUTPUT_SIZE", OUTPUT_SIZE);
+        AddDefinition(_kernelCode, "OUTPUT_MASK", OUTPUT_MASK);
+
+        // create miner OpenCL program
+        cl::Program::Sources sources { { _kernelCode.data(), _kernelCode.size() } };
+        cl::Program program(_context, sources);
+        try
+        {
+            program.build({ device }, options);
+            std::cout << "Build info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+        }
+        catch(cl::Error const&)
+        {
+            std::cout << "Build info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+            return false;
+        }
+
+        _searchKernel = cl::Kernel(program, "search_nonce");
+
+        // create buffer for initial hashing state
+        std::cout << "Creating buffer for initial hashing state." << std::endl;
+        _stateBuffer = cl::Buffer(_context, CL_MEM_READ_ONLY, 32);
+
+        // create buffer for initial hashing state
+        std::cout << "Creating buffer for initial data." << std::endl;
+        _dataBuffer = cl::Buffer(_context, CL_MEM_READ_ONLY, 56);
+
+        // create buffer for mininal target hash
+        std::cout << "Creating buffer for target hash." << std::endl;
+        _minHashBuffer = cl::Buffer(_context, CL_MEM_READ_ONLY, 32);
+
+        // create mining buffers
+        std::cout << "Creating output buffer" << std::endl;
+        _searchBuffer = cl::Buffer(_context, CL_MEM_WRITE_ONLY, (OUTPUT_SIZE + 1) * sizeof(uint64_t));
+    }
+    catch(cl::Error const& err)
+    {
+        std::cout << XDagCLErrorHelper("OpenCL init failed", err);
+        return false;
+    }
+    return true;
+}
+
+uint64_t ClSha256::CalcHash(const uint32_t* state, const uint32_t *data, uint64_t nonce, uint8_t* hash)
+{
     uint64_t result;
     uint8_t minhash[32];
     memset(minhash, 255, 32);
     int iterations = 1;
+    uint64_t zeroBuffer[OUTPUT_SIZE + 1];
+    memset(zeroBuffer, 0, (OUTPUT_SIZE + 1) * sizeof(uint64_t));
 
     try
     {
         _queue.enqueueWriteBuffer(_stateBuffer, CL_FALSE, 0, 32, state);
 		_queue.enqueueWriteBuffer(_dataBuffer, CL_FALSE, 0, 56, data);
         _queue.enqueueWriteBuffer(_minHashBuffer, CL_FALSE, 0, 32, minhash);
-        _queue.enqueueWriteBuffer(_searchBuffer, CL_FALSE, 0, sizeof(c_zero), &c_zero);
+        _queue.enqueueWriteBuffer(_searchBuffer, CL_FALSE, 0, sizeof(zeroBuffer), zeroBuffer);
 
         _searchKernel.setArg(0, _stateBuffer);
 		_searchKernel.setArg(1, _dataBuffer);
@@ -487,6 +619,65 @@ uint64_t ClSha256::CalcHash(uint32_t* state, uint32_t *data, uint64_t nonce, uin
     }
 
     return result;
+}
+
+uint64_t ClSha256::DoMining(const uint32_t* state, const uint32_t *data, const uint32_t *minHash, uint64_t nonce, uint32_t* outputMinHash)
+{
+    uint64_t minNonce = 0;
+    memcpy(outputMinHash, minHash, 32);
+    int iterations = 1;
+
+    uint64_t results[OUTPUT_SIZE + 1];
+    uint64_t zeroBuffer[OUTPUT_SIZE + 1];
+    memset(zeroBuffer, 0, (OUTPUT_SIZE + 1) * sizeof(uint64_t));
+
+    try
+    {
+        _queue.enqueueWriteBuffer(_stateBuffer, CL_FALSE, 0, 32, state);
+        _queue.enqueueWriteBuffer(_dataBuffer, CL_FALSE, 0, 56, data);
+        _queue.enqueueWriteBuffer(_minHashBuffer, CL_FALSE, 0, 32, minHash);
+        _queue.enqueueWriteBuffer(_searchBuffer, CL_FALSE, 0, sizeof(zeroBuffer), zeroBuffer);
+
+        _searchKernel.setArg(0, _stateBuffer);
+        _searchKernel.setArg(1, _dataBuffer);
+        _searchKernel.setArg(2, nonce);
+        _searchKernel.setArg(3, iterations);
+        _searchKernel.setArg(4, _minHashBuffer);
+        _searchKernel.setArg(5, _searchBuffer);
+
+        // Run the kernel.        
+        _queue.enqueueNDRangeKernel(_searchKernel, cl::NullRange, _globalWorkSize, _workgroupSize);
+
+        // Read results.
+        _queue.enqueueReadBuffer(_searchBuffer, CL_TRUE, 0, (OUTPUT_SIZE + 1) * sizeof(uint64_t), results);
+
+        _queue.finish();
+
+        if(results[OUTPUT_SIZE] > 0)
+        {
+            uint32_t currentHash[8];
+            for(int i = 0; i <= OUTPUT_SIZE; i++)
+            {
+                uint64_t nonce = results[i];
+                if(nonce == 0)
+                {
+                    continue;
+                }
+                mod::shasha((uint32_t*)state, (uint32_t*)data, nonce, (uint8_t*)currentHash);
+                if(cmphash((uint64_t*)currentHash, (uint64_t*)outputMinHash) < 0)
+                {
+                    memcpy(outputMinHash, currentHash, 32);
+                    minNonce = nonce;
+                }
+            }
+        }
+    }
+    catch(cl::Error const& _e)
+    {
+        std::cout << XDagCLErrorHelper("OpenCL Error", _e);
+    }
+
+    return minNonce;
 }
 
 unsigned ClSha256::GetNumDevices()
@@ -545,10 +736,10 @@ void ClSha256::ListDevices()
 }
 
 /* loads the kernel file into a string */
-bool ClSha256::LoadKernel()
+bool ClSha256::LoadKernel(std::string kernelName)
 {
     std::string path = PathUtils::GetModuleFolder();
-    path += _clKernelName;
+    path += kernelName;
     if(!PathUtils::FileExists(path))
     {
         //TODO: logging

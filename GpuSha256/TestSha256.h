@@ -29,14 +29,22 @@ private:
     size_t TestPerformanceCpu_Btc(size_t count);
     size_t TestPerformanceCpu_Modified(size_t count);
     size_t TestPerformanceCpuBase(size_t count, const char* message, void doCpuHash(const uint32_t*, const uint8_t*, uint64_t, uint8_t*));
+
+    void CompareMiningResult(const uint32_t* state, const uint8_t* data, const uint32_t* minHash, uint64_t nonce);
+    uint64_t DoMiningSt(const uint32_t* state, const uint8_t* data, const uint32_t* minHash, uint64_t nonce, uint32_t* hash);
+    uint64_t DoMiningMod(const uint32_t* state, const uint8_t* data, const uint32_t* minHash, uint64_t nonce, uint32_t* hash);
+    uint64_t DoMiningGpu(const uint32_t* state, const uint8_t* data, const uint32_t* minHash, uint64_t nonce, uint32_t* hash);
 public:
     CTestSha256();
     ~CTestSha256();
 
-    bool Init();
+    bool InitShaTest();
+    bool InitMiningTest();
+
     void TestHashing();
     void TestPerformance();
-
+    void TestRandomHashing();
     void TestGPU();
+    void TestMining();
 };
 
