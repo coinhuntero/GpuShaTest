@@ -32,7 +32,7 @@ CTestSha256::~CTestSha256()
 bool CTestSha256::InitShaTest()
 {
 #if ENABLE_GPU
-    if (!ClSha256::ConfigureGPU(
+    if(!ClSha256::ConfigureGPU(
         1,
         1,
         0))
@@ -41,7 +41,7 @@ bool CTestSha256::InitShaTest()
         return false;
     }
     ClSha256::SetNumInstances(1);
-    if (!_gpuSha.InitShaTest())
+    if(!_gpuSha.InitShaTest())
     {
         std::cout << "Failed to initialize GPU SHA256" << std::endl;
         return false;
@@ -83,27 +83,27 @@ void CTestSha256::TestHashing()
     {
         return;
     }
-	uint8_t data[56];
-	uint32_t state[8];
-	CRandom::FillRandomArray((uint8_t*)state, 32);
-	CRandom::FillRandomArray(data, 56);
+    uint8_t data[56];
+    uint32_t state[8];
+    CRandom::FillRandomArray((uint8_t*)state, 32);
+    CRandom::FillRandomArray(data, 56);
 
     CompareHashes((uint32_t*)"589015beeefc8b0e438d47640bab2b36", (uint8_t*)"3513d023cf424b5647a7b3c772a5d9ce4c8cca09849793def6435d92", 18446744073709);
 
     CompareHashes(state, data, 654697);
 
-	uint32_t stateConst[8] = 
-	{
-		4153602721,
-		2442630072,
-		1449523699,
-		1580568866,
-		3294848380,
-		2151274137,
-		1804121806,
-		1732303255
-	};
-	CompareHashes(stateConst, data, 0);
+    uint32_t stateConst[8] =
+    {
+        4153602721,
+        2442630072,
+        1449523699,
+        1580568866,
+        3294848380,
+        2151274137,
+        1804121806,
+        1732303255
+    };
+    CompareHashes(stateConst, data, 0);
 
     uint32_t troubleState[8] =
     {
@@ -155,7 +155,7 @@ void CTestSha256::TestRandomHashing()
     uint8_t cpuHashModified[SHA256_SIZE];
     uint8_t gpuHash[SHA256_SIZE];
 
-    for(int i = 0; i < 1000000; i++)
+    for(int i = 0; i < 100000; i++)
     {
         CRandom::FillRandomArray((uint8_t*)state, 32);
         CRandom::FillRandomArray(data, 56);
@@ -239,12 +239,10 @@ void CTestSha256::DoCpuHash_Modified(const uint32_t* state, const uint8_t* data,
     mod::shasha((uint32_t*)state, (uint32_t*)data, nonce, hash);
 }
 
-#if ENABLE_GPU
 inline void CTestSha256::DoGpuHash(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
     _gpuSha.CalcHash((uint32_t*)state, (uint32_t*)data, nonce, hash);
 }
-#endif
 
 void CTestSha256::CompareHashes(const uint32_t* state, const uint8_t* data, uint64_t nonce)
 {
@@ -254,23 +252,18 @@ void CTestSha256::CompareHashes(const uint32_t* state, const uint8_t* data, uint
     uint8_t cpuHashOptSsl[SHA256_SIZE];
     //uint8_t cpuHashBtc[SHA256_SIZE];
     uint8_t cpuHashModified[SHA256_SIZE];
-#if ENABLE_GPU
     uint8_t gpuHash[SHA256_SIZE];
-#endif
     DoCpuHash_St(state, data, nonce, cpuHash);
     DoCpuHash_St_Ssl(state, data, nonce, cpuHashSsl);
     DoCpuHash_Opt(state, data, nonce, cpuHashOpt);
     DoCpuHash_Opt_Ssl(state, data, nonce, cpuHashOptSsl);
     //DoCpuHash_Btc(state, data, nonce, cpuHashBtc);
     DoCpuHash_Modified(state, data, nonce, cpuHashModified);
-
-#if ENABLE_GPU
     DoGpuHash(state, data, nonce, gpuHash);
-#endif
 
-	std::cout << "State: " << std::endl;
-	DumpHex((uint8_t*)state, 32);
-	std::cout << "Nonce: " << nonce << std::endl;
+    std::cout << "State: " << std::endl;
+    DumpHex((uint8_t*)state, 32);
+    std::cout << "Nonce: " << nonce << std::endl;
     std::cout << "Cpu hash (default):" << std::endl;
     DumpHex(cpuHash, SHA256_SIZE);
     std::cout << "Cpu hash (ssl):" << std::endl;
@@ -283,11 +276,9 @@ void CTestSha256::CompareHashes(const uint32_t* state, const uint8_t* data, uint
     //DumpHex(cpuHashBtc, SHA256_SIZE);
     std::cout << "Cpu hash (modified):" << std::endl;
     DumpHex(cpuHashModified, SHA256_SIZE);
-
-#if ENABLE_GPU
     std::cout << "Gpu hash:" << std::endl;
     DumpHex(gpuHash, SHA256_SIZE);
-#endif
+
     bool equal = memcmp(cpuHash, cpuHashOpt, SHA256_SIZE) == 0;
     std::cout << "Cpu default hash and cpu optimized hash are " << (equal ? "equal" : "not equal") << std::endl;
     bool equal5 = memcmp(cpuHash, cpuHashSsl, SHA256_SIZE) == 0;
@@ -298,10 +289,8 @@ void CTestSha256::CompareHashes(const uint32_t* state, const uint8_t* data, uint
     //std::cout << "Cpu default hash and cpu btc hash are " << (equal2 ? "equal" : "not equal") << std::endl;
     bool equal3 = memcmp(cpuHash, cpuHashModified, SHA256_SIZE) == 0;
     std::cout << "Cpu default hash and cpu modified hash are " << (equal3 ? "equal" : "not equal") << std::endl;
-#if ENABLE_GPU
     bool equalG = memcmp(cpuHash, gpuHash, SHA256_SIZE) == 0;
     std::cout << "Cpu default hash and gpu hashes are " << (equalG ? "equal" : "not equal") << std::endl << std::endl;
-#endif    
     std::cout << std::endl;
 }
 
@@ -350,13 +339,13 @@ size_t CTestSha256::TestPerformanceCpu_Modified(size_t count)
 size_t CTestSha256::TestPerformanceCpuBase(size_t count, const char* message, void doCpuHash(const uint32_t*, const uint8_t*, uint64_t, uint8_t*))
 {
     uint32_t *state = (uint32_t*)"989005beeefc8b0e438d47640bab6b36";
-	uint8_t data[56];
+    uint8_t data[56];
     uint8_t hash[32];
-	CRandom::FillRandomArray(data, 56);
+    CRandom::FillRandomArray(data, 56);
 
     std::cout << message << std::endl;
     size_t startTime = GetTimeMs();
-    for (size_t i = 0; i < count; ++i)
+    for(size_t i = 0; i < count; ++i)
     {
         doCpuHash(state, data, i, hash);
     }
@@ -375,15 +364,15 @@ void CTestSha256::TestGPU()
     }
 
     const uint32_t* state = (uint32_t*)"589015beeefc8b0e438d47640bab2b36";
-	uint8_t data[56];
+    uint8_t data[56];
     uint64_t nonce = 18446744073709;
     uint8_t cpuHash[SHA256_SIZE];
     uint8_t cpuHashSim[SHA256_SIZE];
     uint8_t gpuHash[SHA256_SIZE];
-	CRandom::FillRandomArray(data, 56);
+    CRandom::FillRandomArray(data, 56);
 
     DoCpuHash_St((uint32_t*)state, data, nonce, cpuHash);
-    SimulateGpu((uint32_t*)state, data, nonce, cpuHashSim);
+    SimulateGpuSha((uint32_t*)state, data, nonce, cpuHashSim);
     DoGpuHash((uint32_t*)state, data, nonce, gpuHash);
 
     std::cout << "State: " << state << " nonce: " << nonce << std::endl;
@@ -398,11 +387,11 @@ void CTestSha256::TestGPU()
     std::cout << "Cpu default hash and cpu sim hash are " << (equal ? "equal" : "not equal") << std::endl;
     bool equalG = memcmp(cpuHash, gpuHash, SHA256_SIZE) == 0;
     std::cout << "Cpu default hash and gpu hash are " << (equalG ? "equal" : "not equal") << std::endl << std::endl;
- 
+
     std::cout << std::endl;
 }
 
-void CTestSha256::SimulateGpu(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
+void CTestSha256::SimulateGpuSha(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash)
 {
     uint8_t minhash[32];
     memset(minhash, 255, 32);
@@ -417,7 +406,7 @@ void CTestSha256::TestMining()
     {
         return;
     }
-    uint32_t troubleState[8] =
+    /*uint32_t troubleState[8] =
     {
         3029001988,
         2650165609,
@@ -455,9 +444,14 @@ void CTestSha256::TestMining()
         16632664597846690672,
         141415188692984
     };
-    uint64_t startNonce = 9044172378744160000;
+    uint64_t startNonce = 9044172378744160000;*/
 
-    CompareMiningResult(troubleState, (const uint8_t*)troubleData, (const uint32_t*)minHash, startNonce);
+    std::vector<uint8_t> troubleState = HexToBytes("42b2f3e631378405ea10de893c37d0bf5030145c9a66dbc8d96aea4522eb5a8d");
+    std::vector<uint8_t> troubleData = HexToBytes("3aec7e3765c57ccd97a1427cc49fe0d700614dff0444ded5dfbc480da81e3840ca77715f510377860754bd68667b0c6bfc4a91967bddd1fd");
+    std::vector<uint8_t> minHash = HexToBytes("7033e352282762462fb351f2d4d4814b195e8cc51e343a6c9df48d03ac70e7bb");
+    uint64_t startNonce = 2120951095118342000;
+
+    CompareMiningResult((uint32_t*)troubleState.data(), troubleData.data(), (const uint32_t*)minHash.data(), startNonce);
 }
 
 void CTestSha256::CompareMiningResult(const uint32_t* state, const uint8_t* data, const uint32_t* minHash, uint64_t nonce)
@@ -479,15 +473,15 @@ void CTestSha256::CompareMiningResult(const uint32_t* state, const uint8_t* data
         std::cout << "Nonces are different" << std::endl;
         std::cout << "Cpu nonce: " << nonceSt << std::endl;
         std::cout << "Cpu hash (default):" << std::endl;
-        DumpHex((uint8_t*)cpuHash, SHA256_SIZE);
+        std::cout << HashToHexString((uint64_t*)cpuHash) << std::endl;
 
         std::cout << "Cpu nonce mod: " << nonceMod << std::endl;
         std::cout << "Cpu hash mod:" << std::endl;
-        DumpHex((uint8_t*)cpuHashMod, SHA256_SIZE);
+        std::cout << HashToHexString((uint64_t*)cpuHashMod) << std::endl;
 
         std::cout << "Gpu nonce: " << nonceGpu << std::endl;
         std::cout << "Gpu hash:" << std::endl;
-        DumpHex((uint8_t*)gpuHash, SHA256_SIZE);
+        std::cout << HashToHexString((uint64_t*)gpuHash) << std::endl;
     }
 }
 
@@ -517,20 +511,34 @@ uint64_t CTestSha256::DoMiningSt(const uint32_t* state, const uint8_t* data, con
     return min_nonce;
 }
 
-uint64_t CTestSha256::DoMiningMod(const uint32_t* state, const uint8_t* data, const uint32_t* minHash, uint64_t nonce, uint32_t* hash)
+uint64_t CTestSha256::DoMiningMod(const uint32_t* state, const uint8_t* data, const uint32_t* minHash, uint64_t startNonce, uint32_t* outputMinHash)
 {
-    uint32_t currentHash[8];
-    memcpy(hash, minHash, 32);
+    uint64_t results[257];
     uint64_t minNonce = 0;
+    memcpy(outputMinHash, minHash, 32);
+
     for(int i = 0; i < 1048576; ++i)
     {
-        mod::shasha((uint32_t*)state, (uint32_t*)data, nonce, (uint8_t*)currentHash);
-        if(cmphash((uint64_t*)currentHash, (uint64_t*)hash) < 0)
+        mod::search_nonce2(state, (const uint32_t*)data, startNonce, 1, minHash, results, i);
+    }
+
+    if(results[256] > 0)
+    {
+        uint32_t currentHash[8];
+        for(int i = 0; i <= 256; i++)
         {
-            memcpy(hash, currentHash, 32);
-            minNonce = nonce;
+            uint64_t nonce = results[i];
+            if(nonce == 0)
+            {
+                continue;
+            }
+            mod::shasha((uint32_t*)state, (uint32_t*)data, nonce, (uint8_t*)currentHash);
+            if(cmphash((uint64_t*)currentHash, (uint64_t*)outputMinHash) < 0)
+            {
+                memcpy(outputMinHash, currentHash, 32);
+                minNonce = nonce;
+            }
         }
-        ++nonce;
     }
     return minNonce;
 }

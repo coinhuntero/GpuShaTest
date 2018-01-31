@@ -7,6 +7,8 @@
 #define ulong uint64_t
 #define uint uint32_t
 #define uchar uint8_t
+#define OUTPUT_SIZE 256
+#define OUTPUT_MASK 255
 
 namespace mod
 {
@@ -399,4 +401,57 @@ namespace mod
 			outputHash[i] = minHash[i];
 		}
 	}
+
+    void search_nonce2(uint const* hashState,
+        uint const* data,
+        ulong startNonce,
+        uint iterations,
+        uint const* targetHash,
+        ulong *output,
+        ulong id)
+    {
+        uint hash[8];
+        uint minHash[8];
+        uint localHashState[8];
+        uint localData[16];
+        ulong min_nonce = 0;
+        //uint id = get_global_id(0);
+        ulong nonce = startNonce + id * iterations;
+
+#pragma unroll
+        for(uint i = 0; i < 8; ++i)
+        {
+            minHash[i] = targetHash[i];
+        }
+#pragma unroll
+        for(uint i = 0; i < 8; ++i)
+        {
+            localHashState[i] = hashState[i];
+        }
+#pragma unroll
+        for(uint i = 0; i < 14; ++i)
+        {
+            localData[i] = data[i];
+        }
+        for(uint i = 0; i < iterations; ++i)
+        {
+            shasha(localHashState, localData, nonce, (uchar*)hash);
+
+            if(cmphash(hash, minHash) < 0)
+            {
+#pragma unroll
+                for(uint i = 0; i < 8; ++i)
+                {
+                    minHash[i] = hash[i];
+                }
+                min_nonce = nonce;
+            }
+            ++nonce;
+        }
+        if(min_nonce > 0)
+        {
+            output[OUTPUT_SIZE] = output[min_nonce & OUTPUT_MASK] = min_nonce;
+        }
+    }
+
 }

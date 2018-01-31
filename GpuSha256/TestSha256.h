@@ -17,10 +17,9 @@ private:
     static void DoCpuHash_Opt_Ssl(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
     static void DoCpuHash_Btc(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
     static void DoCpuHash_Modified(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
-#if ENABLE_GPU
     inline void DoGpuHash(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
-#endif
-    static void SimulateGpu(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
+    static void SimulateGpuSha(const uint32_t* state, const uint8_t* data, uint64_t nonce, uint8_t* hash);
+
     void CompareHashes(const uint32_t* state, const uint8_t* data, uint64_t nonce);
     size_t TestPerformanceCpu_St(size_t count);
     size_t TestPerformanceCpu_St_Ssl(size_t count);

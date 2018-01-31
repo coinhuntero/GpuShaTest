@@ -586,15 +586,14 @@ uint64_t ClSha256::CalcHash(const uint32_t* state, const uint32_t *data, uint64_
     uint8_t minhash[32];
     memset(minhash, 255, 32);
     int iterations = 1;
-    uint64_t zeroBuffer[OUTPUT_SIZE + 1];
-    memset(zeroBuffer, 0, (OUTPUT_SIZE + 1) * sizeof(uint64_t));
+    uint64_t zero = 0;
 
     try
     {
         _queue.enqueueWriteBuffer(_stateBuffer, CL_FALSE, 0, 32, state);
 		_queue.enqueueWriteBuffer(_dataBuffer, CL_FALSE, 0, 56, data);
         _queue.enqueueWriteBuffer(_minHashBuffer, CL_FALSE, 0, 32, minhash);
-        _queue.enqueueWriteBuffer(_searchBuffer, CL_FALSE, 0, sizeof(zeroBuffer), zeroBuffer);
+        _queue.enqueueWriteBuffer(_searchBuffer, CL_FALSE, 0, sizeof(uint64_t), &zero);
 
         _searchKernel.setArg(0, _stateBuffer);
 		_searchKernel.setArg(1, _dataBuffer);
