@@ -9,7 +9,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include "Cpu\sha256_mod.h"
+#include "Cpu\sha256_opt.h"
 
 unsigned ClSha256::_sWorkgroupSize = ClSha256::_defaultLocalWorkSize;
 unsigned ClSha256::_sInitialGlobalWorkSize = ClSha256::_defaultGlobalWorkSizeMultiplier * ClSha256::_defaultLocalWorkSize;
@@ -662,7 +662,7 @@ uint64_t ClSha256::DoMining(const uint32_t* state, const uint32_t *data, const u
                 {
                     continue;
                 }
-                mod::shasha((uint32_t*)state, (uint32_t*)data, nonce, (uint8_t*)currentHash);
+                opt::shasha((uint32_t*)state, (uint8_t*)data, nonce, (uint8_t*)currentHash);
                 if(cmphash((uint64_t*)currentHash, (uint64_t*)outputMinHash) < 0)
                 {
                     memcpy(outputMinHash, currentHash, 32);

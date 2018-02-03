@@ -4,6 +4,7 @@
 #include "Cpu\sha256_opt.h"
 #include "Cpu\sha256_opt_ssl.h"
 #include "Cpu\sha256_mod.h"
+#include "Cpu\sha256_gsim.h"
 #include "Cpu\csha256.h"
 #include "Utils\Utils.h"
 #include "Utils\Random.h"
@@ -364,14 +365,16 @@ void CTestSha256::TestGPU()
     }
 
     const uint32_t* state = (uint32_t*)"589015beeefc8b0e438d47640bab2b36";
-    uint8_t data[56];
-    uint64_t nonce = 18446744073709;
+    const uint8_t* data = (uint8_t*)"072c0bb2366a14e7685314e66ede2d06b30c55d3b6db42681c71b96d";
+    uint64_t nonce = 1;
     uint8_t cpuHash[SHA256_SIZE];
+    uint8_t cpuHashmod[SHA256_SIZE];
     uint8_t cpuHashSim[SHA256_SIZE];
     uint8_t gpuHash[SHA256_SIZE];
-    CRandom::FillRandomArray(data, 56);
+    //CRandom::FillRandomArray(data, 56);
 
     DoCpuHash_St((uint32_t*)state, data, nonce, cpuHash);
+    DoCpuHash_Modified((uint32_t*)state, data, nonce, cpuHashmod);
     SimulateGpuSha((uint32_t*)state, data, nonce, cpuHashSim);
     DoGpuHash((uint32_t*)state, data, nonce, gpuHash);
 
@@ -397,7 +400,7 @@ void CTestSha256::SimulateGpuSha(const uint32_t* state, const uint8_t* data, uin
     memset(minhash, 255, 32);
     uint64_t resultNonce;
 
-    mod::search_nonce(state, (uint32_t*)data, nonce, 1, (uint32_t*)minhash, &resultNonce, (uint32_t*)hash);
+    gsim::search_nonce(state, (uint32_t*)data, nonce, 1, (uint32_t*)minhash, &resultNonce, (uint32_t*)hash);
 }
 
 void CTestSha256::TestMining()
@@ -519,7 +522,7 @@ uint64_t CTestSha256::DoMiningMod(const uint32_t* state, const uint8_t* data, co
 
     for(int i = 0; i < 1048576; ++i)
     {
-        mod::search_nonce2(state, (const uint32_t*)data, startNonce, 1, minHash, results, i);
+        gsim::search_nonce2(state, (const uint32_t*)data, startNonce, 1, minHash, results, i);
     }
 
     if(results[256] > 0)

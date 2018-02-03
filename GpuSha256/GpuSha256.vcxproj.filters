@@ -44,6 +44,9 @@
     </ClCompile>
     <ClCompile Include="TestSha256.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Cpu\sha256_gsim.cpp">
+      <Filter>Cpu</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -86,5 +89,8 @@
       <Filter>Utils</Filter>
     </ClInclude>
     <ClInclude Include="TestSha256.h" />
+    <ClInclude Include="Cpu\sha256_gsim.h">
+      <Filter>Cpu</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -53,13 +53,21 @@ namespace mod
 	uint sigma0(uint x) { return (x >> 7 | x << 25) ^ (x >> 18 | x << 14) ^ (x >> 3); }
 	uint sigma1(uint x) { return (x >> 17 | x << 15) ^ (x >> 19 | x << 13) ^ (x >> 10); }
 
-#define Round(a, b, c, d, e, f, g, h, k, w)\
-{\
-    t1 = h + Sigma1(e) + Ch(e, f, g) + k + w;\
-    t2 = Sigma0(a) + Maj(a, b, c);\
-    d += t1;\
-    h = t1 + t2;\
-}
+//#define Round(a, b, c, d, e, f, g, h, k, w)\
+//{\
+//    t1 = h + Sigma1(e) + Ch(e, f, g) + k + w;\
+//    t2 = Sigma0(a) + Maj(a, b, c);\
+//    d += t1;\
+//    h = t1 + t2;\
+//}
+
+    void inline Round(uint32_t a, uint32_t b, uint32_t c, uint32_t& d, uint32_t e, uint32_t f, uint32_t g, uint32_t& h, uint32_t k, uint32_t w)
+    {
+        uint32_t t1 = h + Sigma1(e) + Ch(e, f, g) + k + w;
+        uint32_t t2 = Sigma0(a) + Maj(a, b, c);
+        d += t1;
+        h = t1 + t2;
+    }
 
 	void sha256_transform(uint* s, uchar* chunk)
 	{
@@ -267,7 +275,6 @@ namespace mod
 		s[5] += f;
 		s[6] += g;
 		s[7] += h;
-		chunk += 64;
 	}
 
 	void shasha(uint* state, uint* data, ulong nonce, uchar *hash)
@@ -336,122 +343,4 @@ namespace mod
 		WriteBE32((uint*)(hash + 24), stateBuffer[6]);
 		WriteBE32((uint*)(hash + 28), stateBuffer[7]);
 	}
-
-	int cmphash(uint *l, uint *r)
-	{
-#pragma unroll
-		for (int i = 7; i >= 0; --i)
-		{
-			if (l[i] != r[i])
-			{
-				return (l[i] < r[i] ? -1 : 1);
-			}
-		}
-		return 0;
-	}
-
-	void search_nonce(uint const* hashState,
-		uint const* data,
-		ulong startNonce,
-		uint iterations,
-		uint const* targetHash,
-		ulong *output,
-		uint *outputHash)
-	{
-		uint hash[8];
-		uint minHash[8];
-		uint localHashState[8];
-		uint localData[16];
-		ulong min_nonce = 0;
-		uint id = 0;//get_global_id(0);
-		ulong nonce = startNonce + id * iterations;
-
-#pragma unroll
-		for (uint i = 0; i < 8; ++i)
-		{
-			minHash[i] = targetHash[i];
-		}
-#pragma unroll
-		for (uint i = 0; i < 8; ++i)
-		{
-			localHashState[i] = hashState[i];
-		}
-#pragma unroll
-		for (uint i = 0; i < 14; ++i)
-		{
-			localData[i] = data[i];
-		}
-		for (uint i = 0; i < iterations; ++i)
-		{
-			shasha(localHashState, localData, nonce, (uchar*)hash);
-
-			if (cmphash(hash, minHash) < 0)
-			{
-				for (uint i = 0; i < 8; ++i)
-				{
-					minHash[i] = hash[i];
-				}
-				min_nonce = nonce;
-			}
-			++nonce;
-		}
-		output[id] = min_nonce;
-		for (uint i = 0; i < 8; ++i)
-		{
-			outputHash[i] = minHash[i];
-		}
-	}
-
-    void search_nonce2(uint const* hashState,
-        uint const* data,
-        ulong startNonce,
-        uint iterations,
-        uint const* targetHash,
-        ulong *output,
-        ulong id)
-    {
-        uint hash[8];
-        uint minHash[8];
-        uint localHashState[8];
-        uint localData[16];
-        ulong min_nonce = 0;
-        //uint id = get_global_id(0);
-        ulong nonce = startNonce + id * iterations;
-
-#pragma unroll
-        for(uint i = 0; i < 8; ++i)
-        {
-            minHash[i] = targetHash[i];
-        }
-#pragma unroll
-        for(uint i = 0; i < 8; ++i)
-        {
-            localHashState[i] = hashState[i];
-        }
-#pragma unroll
-        for(uint i = 0; i < 14; ++i)
-        {
-            localData[i] = data[i];
-        }
-        for(uint i = 0; i < iterations; ++i)
-        {
-            shasha(localHashState, localData, nonce, (uchar*)hash);
-
-            if(cmphash(hash, minHash) < 0)
-            {
-#pragma unroll
-                for(uint i = 0; i < 8; ++i)
-                {
-                    minHash[i] = hash[i];
-                }
-                min_nonce = nonce;
-            }
-            ++nonce;
-        }
-        if(min_nonce > 0)
-        {
-            output[OUTPUT_SIZE] = output[min_nonce & OUTPUT_MASK] = min_nonce;
-        }
-    }
-
 }

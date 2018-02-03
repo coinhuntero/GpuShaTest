@@ -149,6 +149,7 @@ copy OpenCL\CLMiner_kernel.cl "$(OutDir)CLMiner_kernel.cl" /Y</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Cpu\csha256.cpp" />
+    <ClCompile Include="Cpu\sha256_gsim.cpp" />
     <ClCompile Include="Cpu\sha256_mod.cpp" />
     <ClCompile Include="Cpu\sha256_opt.cpp" />
     <ClCompile Include="Cpu\sha256_st.cpp" />
@@ -166,6 +167,7 @@ copy OpenCL\CLMiner_kernel.cl "$(OutDir)CLMiner_kernel.cl" /Y</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cpu\csha256.h" />
+    <ClInclude Include="Cpu\sha256_gsim.h" />
     <ClInclude Include="Cpu\sha256_mod.h" />
     <ClInclude Include="Cpu\sha256_opt.h" />
     <ClInclude Include="Cpu\sha256_opt_ssl.h" />

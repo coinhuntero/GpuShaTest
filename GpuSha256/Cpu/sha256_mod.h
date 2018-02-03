@@ -7,20 +7,4 @@
 namespace mod
 {
     void shasha(uint32_t* state, uint32_t* data, uint64_t nonce, uint8_t *hash);
-
-    void search_nonce(uint32_t const* hashState,
-		uint32_t const* data,
-        uint64_t startNonce,
-        uint32_t iterations,
-        uint32_t const* targetHash,
-        uint64_t *output,
-        uint32_t *outputHash);
-
-    void search_nonce2(uint32_t const* hashState,
-        uint32_t const* data,
-        uint64_t startNonce,
-        uint32_t iterations,
-        uint32_t const* targetHash,
-        uint64_t *output,
-        uint64_t id);
 }
