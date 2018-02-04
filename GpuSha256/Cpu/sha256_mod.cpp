@@ -261,11 +261,11 @@ namespace mod
 		w13 += sigma1(w11) + w6 + sigma0(w14);
 		Round(d, e, f, g, h, a, b, c, 0xa4506ceb, w13);
 
-		uint w14_2 = w14 + sigma1(w12) + w7 + sigma0(w15);
-		Round(c, d, e, f, g, h, a, b, 0xbef9a3f7, w14_2);
+		w14 += sigma1(w12) + w7 + sigma0(w15);
+		Round(c, d, e, f, g, h, a, b, 0xbef9a3f7, w14);
 
-		uint w15_2 = w15 + sigma1(w13) + w8 + sigma0(w0);
-		Round(b, c, d, e, f, g, h, a, 0xc67178f2, w15_2);
+		w15 += sigma1(w13) + w8 + sigma0(w0);
+		Round(b, c, d, e, f, g, h, a, 0xc67178f2, w15);
 
 		s[0] += a;
 		s[1] += b;
