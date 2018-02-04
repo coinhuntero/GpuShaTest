@@ -6,7 +6,6 @@
 
 namespace gsim
 {
-
     void search_nonce(uint32_t const* hashState,
 		uint32_t const* data,
         uint64_t startNonce,
