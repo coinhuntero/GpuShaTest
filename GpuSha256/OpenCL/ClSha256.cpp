@@ -585,7 +585,6 @@ uint64_t ClSha256::CalcHash(const uint32_t* state, const uint32_t *data, uint64_
     uint64_t result;
     uint8_t minhash[32];
     memset(minhash, 255, 32);
-    int iterations = 1;
     uint64_t zero = 0;
 
     try
@@ -598,10 +597,9 @@ uint64_t ClSha256::CalcHash(const uint32_t* state, const uint32_t *data, uint64_
         _searchKernel.setArg(0, _stateBuffer);
 		_searchKernel.setArg(1, _dataBuffer);
 		_searchKernel.setArg(2, nonce);
-        _searchKernel.setArg(3, 1);
-        _searchKernel.setArg(4, _minHashBuffer);
-        _searchKernel.setArg(5, _searchBuffer); 
-        _searchKernel.setArg(6, _outputHashBuffer);
+        _searchKernel.setArg(3, _minHashBuffer);
+        _searchKernel.setArg(4, _searchBuffer); 
+        _searchKernel.setArg(5, _outputHashBuffer);
 
         // Run the kernel.        
         _queue.enqueueNDRangeKernel(_searchKernel, cl::NullRange, 1, 1);

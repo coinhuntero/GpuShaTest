@@ -16,14 +16,14 @@ int cmphash(uint *l, uint *r)
 	return 0;
 }
 
-void search_nonce(__constant uint* state,
+__kernel void search_nonce(__constant uint* state,
 	__constant uint* data,
 	ulong startNonce,
 	__constant uint* targetHash,
 	__global ulong *output,
 	__global uint *outputHash)
 {
-    ulong nonce = startNonce + (0);
+    ulong nonce = startNonce + get_global_id(0);
 
     uint work[64];
     uint A, B, C, D, E, F, G, H;
