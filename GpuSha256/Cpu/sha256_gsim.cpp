@@ -51,28 +51,38 @@ void DumpHex(uint *byteArray, uint length)
     printf("\n\n");
 }
 
+
 namespace gsim
 {
 #define bytereverse(x) ( ((x) << 24) | (((x) << 8) & 0x00ff0000) | (((x) >> 8) & 0x0000ff00) | ((x) >> 24) )
 #define rot(x, y) rotate(x, (uint)y)
-    uint Ch(uint x, uint y, uint z) { return z ^ (x & (y ^ z)); }
-    uint Maj(uint x, uint y, uint z) { return (x & y) | (z & (x | y)); }
-    uint Sigma0(uint x) { return rot(x, 30) ^ rot(x, 19) ^ rot(x, 10); }
-    uint Sigma1(uint x) { return rot(x, 26) ^ rot(x, 21) ^ rot(x, 7); }
-    uint sigma0(uint x) { return rot(x, 25) ^ rot(x, 14) ^ (x >> 3U); }
-    uint sigma1(uint x) { return rot(x, 15) ^ rot(x, 13) ^ (x >> 10U); }
-    //uint Sigma0(uint x) { return (x >> 2 | x << 30) ^ (x >> 13 | x << 19) ^ (x >> 22 | x << 10); }
-    //uint Sigma1(uint x) { return (x >> 6 | x << 26) ^ (x >> 11 | x << 21) ^ (x >> 25 | x << 7); }
-    //uint sigma0(uint x) { return (x >> 7 | x << 25) ^ (x >> 18 | x << 14) ^ (x >> 3); }
-    //uint sigma1(uint x) { return (x >> 17 | x << 15) ^ (x >> 19 | x << 13) ^ (x >> 10); }
+#define Ch(x, y, z) (z ^ (x & (y ^ z)))
+#define Maj(x, y, z) ((x & y) | (z & (x | y)))
+#define Sigma0(x) (rot(x, 30) ^ rot(x, 19) ^ rot(x, 10))
+#define Sigma1(x) (rot(x, 26) ^ rot(x, 21) ^ rot(x, 7))
+#define sigma0(x) (rot(x, 25) ^ rot(x, 14) ^ (x >> 3U))
+#define sigma1(x) (rot(x, 15) ^ rot(x, 13) ^ (x >> 10U))
+#define Round(a, b, c, d, e, f, g, h, k, w)\
+{\
+    t1 = h + Sigma1(e) + Ch(e, f, g) + k + w;\
+    t2 = Sigma0(a) + Maj(a, b, c);\
+    d += t1;\
+    h = t1 + t2;\
+}
 
-    void inline Round(uint32_t a, uint32_t b, uint32_t c, uint32_t& d, uint32_t e, uint32_t f, uint32_t g, uint32_t& h, uint32_t k, uint32_t w)
-    {
-        uint32_t t1 = h + Sigma1(e) + Ch(e, f, g) + k + w;
-        uint32_t t2 = Sigma0(a) + Maj(a, b, c);
-        d += t1;
-        h = t1 + t2;
-    }
+    //uint Ch(uint x, uint y, uint z) { return z ^ (x & (y ^ z)); }
+    //uint Maj(uint x, uint y, uint z) { return (x & y) | (z & (x | y)); }
+    //uint Sigma0(uint x) { return rot(x, 30) ^ rot(x, 19) ^ rot(x, 10); }
+    //uint Sigma1(uint x) { return rot(x, 26) ^ rot(x, 21) ^ rot(x, 7); }
+    //uint sigma0(uint x) { return rot(x, 25) ^ rot(x, 14) ^ (x >> 3U); }
+    //uint sigma1(uint x) { return rot(x, 15) ^ rot(x, 13) ^ (x >> 10U); }
+    //void inline Round(uint32_t a, uint32_t b, uint32_t c, uint32_t& d, uint32_t e, uint32_t f, uint32_t g, uint32_t& h, uint32_t k, uint32_t w)
+    //{
+    //    uint32_t t1 = h + Sigma1(e) + Ch(e, f, g) + k + w;
+    //    uint32_t t2 = Sigma0(a) + Maj(a, b, c);
+    //    d += t1;
+    //    h = t1 + t2;
+    //}
 
     void search_nonce(uint const* state,
         uint const* data,
@@ -85,7 +95,6 @@ namespace gsim
         ulong nonce = startNonce + 0;//get_global_id(0);
 
         uint a2, b2, c2, d2, e2, f2, g2, h2;
-        uint A2, B2, C2, D2, E2, F2, G2, H2;
         uint t1, t2;
 
         uint a = state[0];
@@ -512,14 +521,14 @@ namespace gsim
 
         ////////////////
         output[0] = nonce;
-        outputHash[0] = bytereverse(a + 0x6a09e667);
-        outputHash[1] = bytereverse(b + 0xbb67ae85);
-        outputHash[2] = bytereverse(c + 0x3c6ef372);
-        outputHash[3] = bytereverse(d + 0xa54ff53a);
-        outputHash[4] = bytereverse(e + 0x510e527f);
-        outputHash[5] = bytereverse(f + 0x9b05688c);
-        outputHash[6] = bytereverse(g + 0x1f83d9ab);
-        outputHash[7] = bytereverse(h + 0x5be0cd19);
+        outputHash[0] = bytereverse(a + 0x6a09e667U);
+        outputHash[1] = bytereverse(b + 0xbb67ae85U);
+        outputHash[2] = bytereverse(c + 0x3c6ef372U);
+        outputHash[3] = bytereverse(d + 0xa54ff53aU);
+        outputHash[4] = bytereverse(e + 0x510e527fU);
+        outputHash[5] = bytereverse(f + 0x9b05688cU);
+        outputHash[6] = bytereverse(g + 0x1f83d9abU);
+        outputHash[7] = bytereverse(h + 0x5be0cd19U);
     }
 
     void search_nonce2(uint const* hashState,
