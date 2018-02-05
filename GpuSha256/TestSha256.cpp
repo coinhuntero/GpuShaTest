@@ -156,7 +156,7 @@ void CTestSha256::TestRandomHashing()
     uint8_t cpuHashModified[SHA256_SIZE];
     uint8_t gpuHash[SHA256_SIZE];
 
-    for(int i = 0; i < 100000; i++)
+    for(int i = 0; i < 10000; i++)
     {
         CRandom::FillRandomArray((uint8_t*)state, 32);
         CRandom::FillRandomArray(data, 56);

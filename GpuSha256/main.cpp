@@ -6,7 +6,7 @@ int main()
 {
     printf("Choose mode:\n");
     printf("1 - test different hashes\n");
-    printf("2 - test 1M random hashes\n");
+    printf("2 - test 10K random hashes\n");
     printf("3 - simulate and test gpu hashing\n");
     printf("4 - simulate mining\n\n");
 
